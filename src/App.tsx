@@ -6,17 +6,18 @@ import { PodConnecter } from './components/PodConnecter';
 const App: React.FC = () => {
   return <>
     <React.StrictMode>
-      <LoggedOut>
-        <section className="section">
-          <p className="content">Please connect to your Pod to start taking Todos.</p>
-          <p className="content">
-            <PodConnecter/>
-          </p>
-        </section>
-      </LoggedOut>
-      <LoggedIn>
-        <Dashboard/>
-      </LoggedIn>
+      {/*<LoggedOut>*/}
+      {/*  <section className="section">*/}
+      {/*    <p className="content">Please connect to your Pod to start taking Todos.</p>*/}
+      {/*    <p className="content">*/}
+      {/*      <PodConnecter/>*/}
+      {/*    </p>*/}
+      {/*  </section>*/}
+      {/*</LoggedOut>*/}
+      {/*<LoggedIn>*/}
+      {/*  <Dashboard/>*/}
+      {/*</LoggedIn>*/}
+      <Dashboard/>
     </React.StrictMode>
   </>;
 }
