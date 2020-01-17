@@ -3,7 +3,7 @@ import React from 'react';
 interface Props {
     name: string;
     isComplete: boolean;
-    onDelete: Function;
+    onDelete: any;
     changeStatus: any;
 };
 
@@ -20,7 +20,7 @@ export const TodoComponent: React.FC<Props> = (props) => {
                 <div className="view">
                     <input className="toggle" type="checkbox" checked={props.isComplete} onChange={props.changeStatus}/>
                     <label>{props.name || ''}</label>
-                    <button className="destroy"></button>
+                    <button className="destroy" onClick={props.onDelete}></button>
                 </div>
             </li>
         </>

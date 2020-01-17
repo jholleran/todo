@@ -2,9 +2,11 @@ import React, {useState} from 'react';
 import {TodoComponent} from './TodoComponent';
 import {TripleSubject} from "tripledoc";
 import {cal} from "rdf-namespaces";
+import * as uuid from 'uuid';
+
 
 interface Todo {
-    key: number
+    key: string
     name: string;
     created: Date;
     complete: boolean;
@@ -12,115 +14,84 @@ interface Todo {
 };
 
 
-
 export const TodosList: React.FC = () => {
-    let todosArray: Todo[] = [
+    let NOTES_INIT: Todo[] = [
         {
-            key: 0,
+            key: uuid.v4(),
             name: "item 1",
             created: new Date(Date.now()),
             complete: false,
         },
         {
-            key: 1,
+            key: uuid.v4(),
             name: "item 2",
             created: new Date(Date.now()),
             complete: true
         },
         {
-            key: 2,
+            key: uuid.v4(),
             name: "item 3",
             created: new Date(Date.now()),
             complete: false
         }];
-    //
-    // const todoList = NOTES_INIT.reduce((previousValue: Todo, current: Todo) => {
-    //     return {
-    //         ...previousValue,
-    //         [current.key]: current
-    //     }
-    // })
 
-
-    const [todos, setTodos] = useState(todosArray);
+    const [todos, setTodos] = useState(NOTES_INIT.reduce(
+        (options, option) => ({
+            ...options,
+            [option.key]: option
+        }),
+        {}
+    ));
 
     const [formContent, setFormContent] = React.useState('');
-    //const [updatedNotesList, setUpdatedNotesList] = React.useState<Todo>();
-
-    // if (!notesList) {
-    //     return null;
-    // }
-
-    // const notes = getNotes(updatedNotesList || notesList);
-
 
     async function saveNote(event: React.FormEvent) {
         event.preventDefault();
-        // if (!notesList) {
-        //     return;
-        // }
-        // const updatedDoc = await addNote(formContent, updatedNotesList || notesList);
-        // setUpdatedNotesList(updatedDoc);
-        // setFormContent('');
 
         if (!formContent.trim().length) {
-            return ;
+            return;
         }
 
+        const newId: string = uuid.v4();
+
         const todo: Todo = {
-            key: Date.now(),
+            key: newId,
             name: formContent,
             complete: false,
             created: new Date(Date.now())
         }
 
-        todos.push(todo);
 
-        setTodos(Object.assign([], todos));
+        setTodos({
+            ...todos,
+            [newId]: todo
+        });
+
         setFormContent('');
     }
 
     async function deleteNote(todo: Todo) {
-        // const found = todos.find(t => t.key == todo.key);
-        //
-        // if (found) {
-        //     found.complete = !found.complete;
-        //     setTodos(Object.assign([], todos));
-        // }
-        // const notesDocument = updatedNotesList || notesList;
-        // if (!notesDocument) {
-        //     return;
-        // }
-        //
-        // notesDocument.removeSubject(note.asRef());
-        // const updatedDoc = await notesDocument.save();
-        // setUpdatedNotesList(updatedDoc);
+        // @ts-ignore
+        delete todos[todo.key];
+
+        setTodos({...todos});
     }
 
     async function changeStatus(todo: Todo) {
-        //console.log(todos);
-        const found = todos.find(t => t.key == todo.key);
+        todo.complete = !todo.complete;
 
-        if (found) {
-            found.complete = !found.complete;
-            setTodos(Object.assign([], todos));
-        }
-
-        // const notesDocument = updatedNotesList || notesList;
-        // if (!notesDocument) {
-        //     return;
-        // }
-        //
-        // note.setLiteral(cal.status, newStatus);
-        // note.setLiteral(schema.dateModified, new Date(Date.now()));
-        // const updatedDoc = await notesDocument.save();
-        // setUpdatedNotesList(updatedDoc);
-        // return updatedDoc.getSubject(note.asRef());
+        setTodos({
+            ...todos,
+            [todo.key]: todo
+        });
     }
 
-    const noteElements = todos.sort(byDate).sort(byComplete).map((todo: Todo) => (
+
+    const todoArray: Todo[] = Object.values(todos);
+    console.log(todoArray);
+    const noteElements = todoArray.sort(byDate).sort(byComplete).map((todo: Todo) => (
         <TodoComponent key={todo.key} name={todo.name} isComplete={todo.complete} onDelete={() => {
-            //deleteNote(todo)
+            deleteNote(todo)
         }} changeStatus={() => {
             changeStatus(todo);
         }}/>
