@@ -1,49 +1,22 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {TodoComponent} from './TodoComponent';
-import {TripleSubject} from "tripledoc";
-import {cal} from "rdf-namespaces";
-import * as uuid from 'uuid';
-
-
-interface Todo {
-    key: string
-    name: string;
-    created: Date;
-    complete: boolean;
-    deleted?: Date;
-};
+import {TripleDocument, TripleSubject} from "tripledoc";
+import {cal, rdf, schema} from "rdf-namespaces";
+import {getNotes, useTodoList} from "../hooks/useTodoList";
 
 
 export const TodosList: React.FC = () => {
-    let NOTES_INIT: Todo[] = [
-        {
-            key: uuid.v4(),
-            name: "item 1",
-            created: new Date(Date.now()),
-            complete: false,
-        },
-        {
-            key: uuid.v4(),
-            name: "item 2",
-            created: new Date(Date.now()),
-            complete: true
-        },
-        {
-            key: uuid.v4(),
-            name: "item 3",
-            created: new Date(Date.now()),
-            complete: false
-        }];
 
-    const [todos, setTodos] = useState(NOTES_INIT.reduce(
-        (options, option) => ({
-            ...options,
-            [option.key]: option
-        }),
-        {}
-    ));
-
+    const [todoDocument, setTodoDocument] = React.useState<TripleDocument>();
     const [formContent, setFormContent] = React.useState('');
+
+    useTodoList(setTodoDocument);
+
+    if (!todoDocument) {
+        return null;
+    }
+
+    const todoListArray = getNotes(todoDocument);
 
     async function saveNote(event: React.FormEvent) {
         event.preventDefault();
@@ -52,45 +25,42 @@ export const TodosList: React.FC = () => {
             return;
         }
 
-        const newId: string = uuid.v4();
+        if (todoDocument) {
+            const newNote = todoDocument.addSubject();
+            newNote.addRef(rdf.type, schema.TextDigitalDocument);
+            newNote.addLiteral(schema.text, formContent);
+            newNote.addLiteral(schema.dateCreated, new Date(Date.now()))
 
-        const todo: Todo = {
-            key: newId,
-            name: formContent,
-            complete: false,
-            created: new Date(Date.now())
+            const updatedDoc = await todoDocument.save([newNote]);
+            setTodoDocument(updatedDoc);
+
+            setFormContent('');
+        }
+    }
+
+    async function deleteNote(todo: TripleSubject) {
+        if (todoDocument) {
+            todoDocument.removeSubject(todo.asRef());
+            const updatedDoc = await todoDocument.save();
+            setTodoDocument(updatedDoc);
+        }
+    }
+
+    async function changeStatus(todo: TripleSubject) {
+        if (isComplete(todo)) {
+            todo.setLiteral(cal.status, cal.created);
+        } else {
+            todo.setLiteral(cal.status, cal.completed);
         }
 
-
-        setTodos({
-            ...todos,
-            [newId]: todo
-        });
-
-        setFormContent('');
+        if (todoDocument) {
+            const updatedDoc = await todoDocument.save();
+            setTodoDocument(updatedDoc);
+        }
     }
 
-    async function deleteNote(todo: Todo) {
-        // @ts-ignore
-        delete todos[todo.key];
-
-        setTodos({...todos});
-    }
-
-    async function changeStatus(todo: Todo) {
-        todo.complete = !todo.complete;
-
-        setTodos({
-            ...todos,
-            [todo.key]: todo
-        });
-    }
-
-
-    const todoArray: Todo[] = Object.values(todos);
-    console.log(todoArray);
-    const noteElements = todoArray.sort(byDate).sort(byComplete).map((todo: Todo) => (
-        <TodoComponent key={todo.key} name={todo.name} isComplete={todo.complete} onDelete={() => {
+    const noteElements = todoListArray.sort(byDate).sort(byComplete).map((todo: TripleSubject) => (
+        <TodoComponent key={todo.asRef()} todo={todo} onDelete={() => {
             deleteNote(todo)
         }} changeStatus={() => {
             changeStatus(todo);
@@ -118,39 +88,42 @@ export const TodosList: React.FC = () => {
                     {noteElements}
                 </ul>
             </section>
-            {/*<footer className="footer">*/}
-            {/*    <span className="todo-count"><strong>{openTodosCount(notes)}</strong> items left</span>*/}
-            {/*</footer>*/}
+            <footer className="footer">
+                <span className="todo-count"><strong>{openTodosCount(todoListArray)}</strong> items left</span>
+            </footer>
         </>
     );
 };
 
-function byDate(todoA: Todo, todoB: Todo): number {
-    const dateA = todoA.created;
-    const dateB = todoB.created;
-
-    if (!(dateA instanceof Date) || !(dateB instanceof Date)) {
+function byDate(note1: TripleSubject, note2: TripleSubject): number {
+    const date1 = note1.getDateTime(schema.dateCreated);
+    const date2 = note2.getDateTime(schema.dateCreated);
+    if (!(date1 instanceof Date) || !(date2 instanceof Date)) {
         return 0;
     }
 
-    return dateB.getTime() - dateA.getTime();
+    return date2.getTime() - date1.getTime();
 }
 
-function byComplete(note1: { complete: boolean }, note2: { complete: boolean }): number {
-    if (note1.complete === note2.complete) {
+function byComplete(note1: TripleSubject, note2: TripleSubject): number {
+    if (isComplete(note1) === isComplete(note2)) {
         return 0;
     }
 
-    if (note1.complete && !note2.complete) {
+    if (isComplete(note1) && !isComplete(note2)) {
         return 1;
     }
 
     return -1;
 }
 
+function isComplete(todo: TripleSubject) {
+    return cal.completed === todo.getString(cal.status);
+}
+
 function openTodosCount(todos: TripleSubject[]): number {
     return todos.filter((todo: TripleSubject) => {
-        return cal.completed != todo.getString(cal.status);
+        return !isComplete(todo);
     }).length;
 }
 
