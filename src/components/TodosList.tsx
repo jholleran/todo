@@ -7,10 +7,8 @@ import {getNotes, useTodoList} from "../hooks/useTodoList";
 
 export const TodosList: React.FC = () => {
 
-    const [todoDocument, setTodoDocument] = React.useState<TripleDocument>();
     const [formContent, setFormContent] = React.useState('');
-
-    useTodoList(setTodoDocument);
+    const [todoDocument, setTodoDocument] = useTodoList();
 
     if (!todoDocument) {
         return null;
@@ -59,7 +57,7 @@ export const TodosList: React.FC = () => {
         }
     }
 
-    const noteElements = todoListArray.sort(byDate).sort(byComplete).map((todo: TripleSubject) => (
+    const noteElements = todoListArray.sort(byDate).map((todo: TripleSubject) => (
         <TodoComponent key={todo.asRef()} todo={todo} onDelete={() => {
             deleteNote(todo)
         }} changeStatus={() => {
