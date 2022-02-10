@@ -13,7 +13,7 @@
     "@types/solid__react": "^1.6.1",
     "@types/uuid": "^3.4.6",
     "bulma": "^0.7.5",
-    "node-sass": "^4.12.0",
+    "node-sass": "^7.0.0",
     "rdf-namespaces": "^1.5.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
